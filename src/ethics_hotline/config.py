@@ -1,14 +1,14 @@
 """Application configuration.
 
 Every setting the app reads from the process environment is defined here.
-No other module should call ''os.environ'' or ''os.getenv'' directly; import
-and use the module-level ''settings'' instance instead.
+No other module should call 'os.environ' or 'os.getenv' directly; import
+and use the module-level 'settings' instance instead.
 
 This module intentionally has no AWS fields yet. It is structured as a
-plain dataclass with a single ''from_env'' constructor so that later chunks
+plain dataclass with a single 'from_env' constructor so that later work
 (AWS region, S3 bucket, max upload size) can add fields and matching
-''os.getenv'' calls in ''from_env'' without changing how the rest of the
-app consumes ''settings''.
+'os.getenv' calls in 'from_env' without changing how the rest of the
+app consumes 'settings'.
 """
 
 from __future__ import annotations
