@@ -8,6 +8,7 @@ Routes live entirely in blueprints, never on the app object.
 from __future__ import annotations
 
 from flask import Flask
+from flask_migrate import Migrate
 
 from ethics_hotline.blueprints.health import health_bp
 from ethics_hotline.blueprints.organizations import organizations_bp
@@ -18,6 +19,8 @@ from ethics_hotline.logging import configure_logging
 from ethics_hotline.middleware import register_request_logging
 from ethics_hotline.models import db
 
+migrate = Migrate()
+
 
 def create_app() -> Flask:
     """Build and return a configured Flask application."""
@@ -27,6 +30,7 @@ def create_app() -> Flask:
     app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_url
 
     db.init_app(app)
+    migrate.init_app(app, db)
 
     register_error_handlers(app)
     register_request_logging(app)
