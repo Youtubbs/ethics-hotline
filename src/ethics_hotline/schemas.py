@@ -62,9 +62,30 @@ class ReportCreate(BaseModel):
 
 
 class ReportStatusUpdate(BaseModel):
-    """Payload to move a report to a new status."""
+    """Payload to move a report to a new status.
+
+    Carries the version the caller last saw, so the update only succeeds
+    if the row is still at that version.
+    """
 
     status: Status
+    version: int
+
+
+class ReportListQuery(BaseModel):
+    """Query-parameter filters and sort for listing an organization's reports."""
+
+    category: Optional[Category] = None
+    status: Optional[Status] = None
+    since: Optional[datetime] = None
+    sort: Literal["submitted_at", "-submitted_at"] = "submitted_at"
+
+
+class ReportDeleteConfirm(BaseModel):
+    """Payload confirming report deletion: an admin marker plus the report id."""
+
+    admin: Literal[True]
+    confirm_id: int
 
 
 class ReportRead(BaseModel):
