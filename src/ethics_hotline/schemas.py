@@ -36,6 +36,12 @@ class OrganizationUpdate(BaseModel):
     industry: Optional[str] = Field(default=None, min_length=1, max_length=200)
 
 
+class OrganizationDeleteConfirm(BaseModel):
+    """Payload confirming deletion of an organization by echoing its id."""
+
+    id: int
+
+
 class OrganizationRead(BaseModel):
     """An organization as returned to clients, including its open-report count."""
 

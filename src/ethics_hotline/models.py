@@ -28,7 +28,9 @@ class Organization(db.Model):
     industry: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(nullable=False, server_default=func.now())
 
-    reports: Mapped[list["Report"]] = relationship(back_populates="organization")
+    reports: Mapped[list["Report"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
 
 
 class Report(db.Model):
