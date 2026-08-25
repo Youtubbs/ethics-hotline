@@ -25,5 +25,17 @@ services:
       db:
         condition: service_healthy
 
+  tests:
+    build:
+      context: .
+      target: test
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-ethics_hotline}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles:
+      - test
+
 volumes:
   db_data:
