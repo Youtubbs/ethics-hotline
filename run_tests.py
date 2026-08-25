@@ -1,4 +1,4 @@
-"""Test-container entrypoint: apply migrations, then run the test suite.
+"""Test-container entrypoint that applies migrations, then runs the test suite.
 
 A plain Python script, matching entrypoint.py, so nothing depends on a
 shell being present the way it is on this Linux container versus however
