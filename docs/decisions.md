@@ -29,3 +29,28 @@ is gone (404).
 
 Chosen over 'SELECT FOR UPDATE' because no held lock, and the failure mode is
 trivial to test without coordinating two real transactions.
+
+## PII is redacted in place
+
+Detected PII spans are replaced with '[REDACTED]' and the report stores
+with 'contained_pii' true. Screening runs before the row is built, so
+the raw text is never written.
+
+Rejecting would bounce an anonymous reporter back with "you identified
+someone, try again", which discourages reporting and would encourage a second
+submission that still is bad.
+
+## Comprehend failure fails the submission closed
+
+If 'DetectPiiEntities' fails, the submission is rejected with the
+upstream error envelope (502) and nothing is written.
+
+Screening is a safety requirement. A report stored unscreened would 
+break the anonymity guarantee.
+
+## Minimum report length is 20 characters
+
+Enforced as a Pydantic constraint, so short text never reaches
+Comprehend. Apparently, comprehend behaves unpredictably on empty or
+single-character input, and 20 rules out prompts that wouldnt provide
+enough context. 

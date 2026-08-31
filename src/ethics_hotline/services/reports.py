@@ -8,9 +8,11 @@ from __future__ import annotations
 
 from sqlalchemy import select, update
 
+from ethics_hotline.aws.comprehend import ComprehendClient
 from ethics_hotline.errors import ConflictError, NotFoundError
 from ethics_hotline.models import Organization, Report, db
 from ethics_hotline.schemas import ReportCreate, ReportListQuery, ReportStatusUpdate
+from ethics_hotline.services.screening import screen_text
 
 # A closed report can only be reopened to under_review, never straight
 # back to new; see docs/decisions.md for the reasoning.
@@ -39,20 +41,23 @@ def get_report_or_404(org_id: int, report_id: int) -> Report:
     return report
 
 
-def submit_report(org_id: int, payload: ReportCreate) -> Report:
-    """Validate, persist, and return a new report.
+def submit_report(org_id: int, payload: ReportCreate, comprehend: ComprehendClient) -> Report:
+    """Screen, persist, and return a new report.
 
-    This is the code a later pass wires PII screening into: screening
-    must run on payload.text before the Report below is constructed, and
-    would set contained_pii and, when no category is supplied,
-    suggested_category.
+    Screening runs before the Report is constructed, so a Comprehend
+    failure (raised as UpstreamAIError by the wrapper) propagates out
+    before anything is added to the session. Only redacted text is ever
+    written to the row. Category suggestion is a later update, so
+    suggested_category stays null here.
     """
     get_organization_or_404(org_id)
 
+    screened = screen_text(payload.text, comprehend)
+
     report = Report(
         organization_id=org_id,
-        text=payload.text,
-        contained_pii=False,
+        text=screened.text,
+        contained_pii=screened.contained_pii,
         category=payload.category,
         suggested_category=None,
         status="new",

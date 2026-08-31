@@ -14,7 +14,9 @@ services:
       retries: 10
 
   api:
-    build: .
+    build:
+      context: .
+      target: runtime
     env_file:
       - .env
     environment:

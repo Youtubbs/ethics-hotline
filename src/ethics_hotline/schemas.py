@@ -15,9 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 Category = Literal["safety", "harassment", "financial", "other"]
 Status = Literal["new", "under_review", "closed"]
 
-# Provisional bounds for report text. The lower bound exists so Comprehend
-# never sees empty or single-character input; its final justified value is
-# set later, which may adjust this constant.
+# Enforced here, at the Pydantic boundary, so text below the minimum
+# never reaches Comprehend at all. See docs/decisions.md for the reasoning.
 REPORT_TEXT_MIN_LENGTH = 20
 REPORT_TEXT_MAX_LENGTH = 5000
 

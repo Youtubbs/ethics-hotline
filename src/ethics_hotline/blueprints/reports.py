@@ -3,13 +3,17 @@
 Nested under an organization (/organizations/<org_id>/reports/...), which
 is also where the summary route added in a later pass will live. All
 mutation logic lives in services/reports.py; routes only parse the
-request and translate the result to JSON.
+request, build any AWS wrapper a service needs from the shared session
+module, and translate the result to JSON. No route calls boto3.client()
+directly.
 """
 
 from __future__ import annotations
 
 from flask import Blueprint, Response, jsonify, request
 
+from ethics_hotline.aws.comprehend import ComprehendClient
+from ethics_hotline.aws.session import get_session
 from ethics_hotline.errors import ConflictError
 from ethics_hotline.models import Report
 from ethics_hotline.schemas import (
@@ -40,7 +44,8 @@ def _serialize_report(report: Report) -> dict:
 def create_report(org_id: int) -> tuple[Response, int]:
     """Submit a new anonymous report against an organization."""
     payload = ReportCreate.model_validate(request.get_json(silent=True) or {})
-    report = submit_report(org_id, payload)
+    comprehend = ComprehendClient(get_session())
+    report = submit_report(org_id, payload, comprehend)
     return jsonify(_serialize_report(report)), 201
 
 
