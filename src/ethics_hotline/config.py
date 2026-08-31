@@ -4,17 +4,17 @@ Every setting the app reads from the process environment is defined here.
 No other module should call 'os.environ' or 'os.getenv' directly; import
 and use the module-level 'settings' instance instead.
 
-This module intentionally has no AWS fields yet. It is structured as a
-plain dataclass with a single 'from_env' constructor so that later work
-(AWS region, S3 bucket, max upload size) can add fields and matching
-'os.getenv' calls in 'from_env' without changing how the rest of the
-app consumes 'settings'.
+AWS region and S3 bucket are optional. nothing before the AWS wrapper
+modules exercises them, so the app still boots with no AWS account or
+credentials in existence, exactly as it did before this file gained
+them. A later update will add max upload size the same way.
 """
 
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -28,6 +28,8 @@ class Settings:
     database_url: str
     env: str
     log_level: str
+    aws_region: str
+    aws_s3_bucket: Optional[str]
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -40,6 +42,8 @@ class Settings:
             database_url=database_url,
             env=os.getenv("APP_ENV", "development"),
             log_level=os.getenv("LOG_LEVEL", "INFO"),
+            aws_region=os.getenv("AWS_REGION", "us-east-1"),
+            aws_s3_bucket=os.getenv("AWS_S3_BUCKET") or None,
         )
 
 

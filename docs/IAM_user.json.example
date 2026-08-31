@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ComprehendPiiAndKeyPhraseDetection",
+      "Effect": "Allow",
+      "Action": [ "comprehend:DetectPiiEntities", "comprehend:DetectKeyPhrases" ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "TextractDocumentTextDetection",
+      "Effect": "Allow",
+      "Action": "textract:DetectDocumentText",
+      "Resource": "*"
+    },
+    {
+      "Sid": "EvidenceBucketReadWrite",
+      "Effect": "Allow",
+      "Action": [ "s3:PutObject", "s3:GetObject" ],
+      "Resource": "arn:aws:s3:::REPLACE_WITH_BUCKET_NAME/*"
+    }
+  ]
+}

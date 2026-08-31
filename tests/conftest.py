@@ -49,8 +49,7 @@ def db_session(app: Flask) -> Iterator[None]:
 
     Flask-SQLAlchemy's Session.get_bind() always prefers the app's
     registered engine over a session-level bind, so joining an external
-    transaction (the standard SQLAlchemy rollback-per-test recipe) means
-    temporarily replacing the registered engine itself with a connection
+    transaction means temporarily replacing the registered engine itself with a connection
     that already has a transaction open, not just constructing a Session
     with bind=connection. join_transaction_mode="create_savepoint" then
     makes each commit the app code issues open a new SAVEPOINT instead of
