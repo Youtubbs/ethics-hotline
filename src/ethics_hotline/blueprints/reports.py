@@ -27,6 +27,7 @@ from ethics_hotline.services.reports import (
     delete_report,
     list_reports,
     submit_report,
+    summarize_reports,
     update_report_status,
 )
 
@@ -55,6 +56,12 @@ def get_reports(org_id: int) -> tuple[Response, int]:
     query = ReportListQuery.model_validate(request.args.to_dict())
     reports = list_reports(org_id, query)
     return jsonify([_serialize_report(r) for r in reports]), 200
+
+
+@reports_bp.get("/summary")
+def get_reports_summary(org_id: int) -> tuple[Response, int]:
+    """Return report counts for an organization, by category and by status."""
+    return jsonify(summarize_reports(org_id)), 200
 
 
 @reports_bp.patch("/<int:report_id>")

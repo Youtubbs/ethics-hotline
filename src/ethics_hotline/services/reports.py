@@ -6,12 +6,13 @@ implemented here are documented in docs/decisions.md.
 
 from __future__ import annotations
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from ethics_hotline.aws.comprehend import ComprehendClient
 from ethics_hotline.errors import ConflictError, NotFoundError
 from ethics_hotline.models import Organization, Report, db
 from ethics_hotline.schemas import ReportCreate, ReportListQuery, ReportStatusUpdate
+from ethics_hotline.services.categorize import suggest_category
 from ethics_hotline.services.screening import screen_text
 
 # A closed report can only be reopened to under_review, never straight
@@ -47,19 +48,26 @@ def submit_report(org_id: int, payload: ReportCreate, comprehend: ComprehendClie
     Screening runs before the Report is constructed, so a Comprehend
     failure (raised as UpstreamAIError by the wrapper) propagates out
     before anything is added to the session. Only redacted text is ever
-    written to the row. Category suggestion is a later update, so
-    suggested_category stays null here.
+    written to the row.
+
+    When the submitter supplies no category, a suggestion is derived from
+    the redacted text, never the original. A supplied category is left
+    alone and costs no extra Comprehend call.
     """
     get_organization_or_404(org_id)
 
     screened = screen_text(payload.text, comprehend)
+
+    suggested = None
+    if payload.category is None:
+        suggested = suggest_category(screened.text, comprehend)
 
     report = Report(
         organization_id=org_id,
         text=screened.text,
         contained_pii=screened.contained_pii,
         category=payload.category,
-        suggested_category=None,
+        suggested_category=suggested,
         status="new",
         version=1,
     )
@@ -128,3 +136,32 @@ def delete_report(org_id: int, report_id: int) -> None:
     report = get_report_or_404(org_id, report_id)
     db.session.delete(report)
     db.session.commit()
+
+
+def summarize_reports(org_id: int) -> dict[str, dict[str, int]]:
+    """Return an organization's report counts by category and by status.
+
+    Both breakdowns are GROUP BY aggregates, not Python loops over rows.
+    The category breakdown reports the effective category: the submitted
+    one when present, otherwise the suggested one.
+    """
+    get_organization_or_404(org_id)
+
+    effective_category = func.coalesce(Report.category, Report.suggested_category)
+
+    by_category_rows = db.session.execute(
+        select(effective_category, func.count(Report.id))
+        .where(Report.organization_id == org_id)
+        .group_by(effective_category)
+    ).all()
+
+    by_status_rows = db.session.execute(
+        select(Report.status, func.count(Report.id))
+        .where(Report.organization_id == org_id)
+        .group_by(Report.status)
+    ).all()
+
+    return {
+        "by_category": {(category or "other"): count for category, count in by_category_rows},
+        "by_status": {status: count for status, count in by_status_rows},
+    }

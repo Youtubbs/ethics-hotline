@@ -53,4 +53,20 @@ break the anonymity guarantee.
 Enforced as a Pydantic constraint, so short text never reaches
 Comprehend. Apparently, comprehend behaves unpredictably on empty or
 single-character input, and 20 rules out prompts that wouldnt provide
-enough context. 
+enough context.
+
+## Category suggestion: most keyword hits wins, otherwise other
+
+Comprehend returns key phrases for the redacted text. Each phrase is
+checked against a per-category keyword list; the category with the most
+matching phrases wins
+
+Other only runs when the submitter left the category blank, so a supplied
+category is never overridden and costs no extra Comprehend call.
+
+## Summary counts come from SQL aggregates
+
+'GET /organizations/<id>/reports/summary' returns counts by category and
+by status from two GROUP BY queries, not Python loops. The category
+breakdown uses COALESCE(category, suggested_category), so an uncategorized
+report is counted under whatever was suggested for it 
