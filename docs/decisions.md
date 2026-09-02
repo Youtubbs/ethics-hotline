@@ -70,3 +70,38 @@ category is never overridden and costs no extra Comprehend call.
 by status from two GROUP BY queries, not Python loops. The category
 breakdown uses COALESCE(category, suggested_category), so an uncategorized
 report is counted under whatever was suggested for it 
+
+## Evidence is best effort
+
+Validation rejects the submission; for example, a non-image, non-PDF upload is a 422,
+and an oversized one is refused by MAX_CONTENT_LENGTH before the body is
+read (413).
+
+Past validation, nothing about the evidence can kill the report. If S3
+storage, Textract extraction, or the screening of the extracted text
+fails, that is logged and the report still stores with whatever
+succeeded. This is the deliberate asymmetry against the body. Comprehend
+failing on the body kills the submission, because an unscreened body
+would break anonymity, whereas failed evidence just means less
+supplementary detail.
+
+Zero extracted text is a normal outcome, not an error. A photo with no
+readable text stores with evidence_text null.
+
+## Evidence text goes through the same redaction function as the body
+
+process_evidence calls screen_text, the identical function the body
+uses. Evidence text is stored only if it came back screened;
+if screening fails, the text is dropped rather than stored unscreened.
+contained_pii is true when either the body or the evidence carried PII.
+
+## The raw evidence file is never exposed
+
+The S3 key is stored on the row but is not part of ReportRead, so no
+endpoint returns the file, the key, or a URL to it. There are no
+presigned URLs anywhere.
+
+## Max evidence size is 5 MB, from settings
+
+MAX_EVIDENCE_BYTES in the environment, defaulting to 5242880. Textract's
+synchronous DetectDocumentText caps at 10 MB, so this leaves some room

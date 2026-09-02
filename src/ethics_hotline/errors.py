@@ -12,6 +12,7 @@ from typing import Any
 
 from flask import Flask, Response, g, jsonify
 from pydantic import ValidationError as PydanticValidationError
+from werkzeug.exceptions import RequestEntityTooLarge
 
 
 class DomainError(Exception):
@@ -73,3 +74,13 @@ def register_error_handlers(app: Flask) -> None:
         error: PydanticValidationError,
     ) -> tuple[Response, int]:
         return jsonify(_envelope("validation_error", str(error))), 422
+
+    @app.errorhandler(RequestEntityTooLarge)
+    def _handle_request_too_large(
+        error: RequestEntityTooLarge,
+    ) -> tuple[Response, int]:
+        """Render Werkzeug's pre-read size rejection."""
+        return (
+            jsonify(_envelope("payload_too_large", "Uploaded file exceeds the size limit.")),
+            413,
+        )

@@ -6,6 +6,8 @@ implemented here are documented in docs/decisions.md.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from sqlalchemy import func, select, update
 
 from ethics_hotline.aws.comprehend import ComprehendClient
@@ -13,6 +15,7 @@ from ethics_hotline.errors import ConflictError, NotFoundError
 from ethics_hotline.models import Organization, Report, db
 from ethics_hotline.schemas import ReportCreate, ReportListQuery, ReportStatusUpdate
 from ethics_hotline.services.categorize import suggest_category
+from ethics_hotline.services.evidence import EvidenceResult
 from ethics_hotline.services.screening import screen_text
 
 # A closed report can only be reopened to under_review, never straight
@@ -42,7 +45,12 @@ def get_report_or_404(org_id: int, report_id: int) -> Report:
     return report
 
 
-def submit_report(org_id: int, payload: ReportCreate, comprehend: ComprehendClient) -> Report:
+def submit_report(
+    org_id: int,
+    payload: ReportCreate,
+    comprehend: ComprehendClient,
+    evidence: Optional[EvidenceResult] = None,
+) -> Report:
     """Screen, persist, and return a new report.
 
     Screening runs before the Report is constructed, so a Comprehend
@@ -53,6 +61,11 @@ def submit_report(org_id: int, payload: ReportCreate, comprehend: ComprehendClie
     When the submitter supplies no category, a suggestion is derived from
     the redacted text, never the original. A supplied category is left
     alone and costs no extra Comprehend call.
+
+    Evidence, when present, has already been stored and screened by the
+    evidence pipeline. Its text is stored only if it came back screened,
+    and contained_pii is true if either the body or the evidence carried
+    PII.
     """
     get_organization_or_404(org_id)
 
@@ -62,14 +75,18 @@ def submit_report(org_id: int, payload: ReportCreate, comprehend: ComprehendClie
     if payload.category is None:
         suggested = suggest_category(screened.text, comprehend)
 
+    evidence = evidence or EvidenceResult()
+
     report = Report(
         organization_id=org_id,
         text=screened.text,
-        contained_pii=screened.contained_pii,
+        contained_pii=screened.contained_pii or evidence.contained_pii,
         category=payload.category,
         suggested_category=suggested,
         status="new",
         version=1,
+        evidence_s3_key=evidence.s3_key,
+        evidence_text=evidence.screened_text,
     )
     db.session.add(report)
     db.session.commit()

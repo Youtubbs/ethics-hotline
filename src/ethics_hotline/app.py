@@ -28,6 +28,9 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = settings.database_url
+    # Werkzeug apparently refuses a larger body at the WSGI layer, before the upload
+    # is ever read into memory.
+    app.config["MAX_CONTENT_LENGTH"] = settings.max_evidence_bytes
 
     db.init_app(app)
     migrate.init_app(app, db)

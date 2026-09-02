@@ -20,6 +20,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 5 MB. Textract's synchronous DetectDocumentText caps at 10 MB, so this
+# leaves room while keeping a single upload small.
+DEFAULT_MAX_EVIDENCE_BYTES = 5 * 1024 * 1024
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -30,6 +34,7 @@ class Settings:
     log_level: str
     aws_region: str
     aws_s3_bucket: Optional[str]
+    max_evidence_bytes: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -44,6 +49,9 @@ class Settings:
             log_level=os.getenv("LOG_LEVEL", "INFO"),
             aws_region=os.getenv("AWS_REGION", "us-east-1"),
             aws_s3_bucket=os.getenv("AWS_S3_BUCKET") or None,
+            max_evidence_bytes=int(
+                os.getenv("MAX_EVIDENCE_BYTES") or DEFAULT_MAX_EVIDENCE_BYTES
+            ),
         )
 
 
