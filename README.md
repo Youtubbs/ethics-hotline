@@ -84,3 +84,7 @@ file field; without evidence, plain JSON works. Every error returns
 - [docs/erd.md](docs/erd.md) — the data model
 - [docs/request-flow.md](docs/request-flow.md) — how a request moves through the app
 - [docs/testing-architecture.md](docs/testing-architecture.md) — the test container and rollback-per-test fixture
+
+## Kanban Board
+
+Look at Projects -> [Ethics Hotline Kanban board](https://github.com/users/Youtubbs/projects/2) to see objectives completed.
