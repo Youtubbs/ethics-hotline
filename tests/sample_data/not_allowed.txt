@@ -1,0 +1,1 @@
+A plain text file. The API should refuse this with a 422.
